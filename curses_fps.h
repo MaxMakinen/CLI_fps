@@ -2,6 +2,7 @@
 # define CURSES_FPS_H
 
 # include <math.h>
+# include <unistd.h>
 
 # define SCREEN_WIDTH 120
 # define SCREEN_HEIGHT 30

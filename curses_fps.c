@@ -4,8 +4,8 @@
 int	main(void)
 {
 	int		x, y, tx, ty;
-	float	fPlayerX = 8.0f;			// Player Start Position
-	float	fPlayerY = 8.0f;
+	float	fPlayerX = 2.0f;			// Player Start Position
+	float	fPlayerY = 2.0f;
 	float	fPlayerA = 0.0f;			// Player Start Rotation
 	float	fRayAngle = 0.0f;
 	float	fStepSize = 0.1f;			// Increment size for ray casting, decrease to increase										
@@ -24,18 +24,18 @@ int	main(void)
 	char	map[16][16] = {
 		{"################"},
 		{"#..............#"},
-		{"#......#.#.....#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#..............#"},
-		{"#......###.....#"},
+		{"#......###..#..#"},
+		{"#......###..#..#"},
+		{"#...........#..#"},
+		{"#.########..#..#"},
+		{"#..#........#..#"},
+		{"##.#.#####..#..#"},
+		{"#..#........#..#"},
+		{"#.####.###..#..#"},
+		{"#..#...#.#.....#"},
+		{"##.#.###.#####.#"},
+		{"#..#...#.......#"},
+		{"#.####.#########"},
 		{"#..............#"},
 		{"################"}
 	};
@@ -227,6 +227,7 @@ int	main(void)
 		mvaddch((int)fPlayerX, (int)fPlayerY, 'P');
 		move((int)fPlayerX, (int)fPlayerY);
 		refresh(); /* Refresh ncurses */
+		usleep(50000);
 		ch = getch();
 		if (ch == KEY_END)
 			break ;
@@ -254,8 +255,26 @@ int	main(void)
 				fPlayerY += cosf(fPlayerA) * 0.5f;
 			}
 		}
-		ch = 0;
-
+		else if (ch == KEY_UP || ch == 'e')
+		{
+			fPlayerX += cosf(fPlayerA) * 0.5f;
+			fPlayerY += sinf(fPlayerA) * 0.5f;
+			if (map[(int)fPlayerX][(int)fPlayerY] == '#')
+			{				
+				fPlayerX -= cosf(fPlayerA) * 0.5f;
+				fPlayerY -= sinf(fPlayerA) * 0.5f;
+			}
+		}
+		else if (ch == KEY_DOWN || ch == 'q')
+		{
+			fPlayerX -= cosf(fPlayerA) * 0.5f;
+			fPlayerY -= sinf(fPlayerA) * 0.5f;
+			if (map[(int)fPlayerX][(int)fPlayerY] == '#')
+			{				
+				fPlayerX += cosf(fPlayerA) * 0.5f;
+				fPlayerY += sinf(fPlayerA) * 0.5f;
+			}
+		}
 	}
 	endwin();		/* End curses mode		  */
 	return (0);
