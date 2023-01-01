@@ -1,12 +1,13 @@
 #include <ncurses.h>
+#include "curses_fps.h"
 
 int	main(void)
 {
-	int		x;
-	float	fPlayerX = 14.7f;			// Player Start Position
-	float	fPlayerY = 5.09f;
+	int		x, y, tx, ty;
+	float	fPlayerX = 8.0f;			// Player Start Position
+	float	fPlayerY = 8.0f;
 	float	fPlayerA = 0.0f;			// Player Start Rotation
-	float	fRayAngle;
+	float	fRayAngle = 0.0f;
 	float	fStepSize = 0.1f;			// Increment size for ray casting, decrease to increase										
 	float	fDistanceToWall = 0.0f; 	// resolution
 	bool	bHitWall = false;			// Set when ray hits wall block
@@ -15,31 +16,61 @@ int	main(void)
 	float	fEyeY;
 	int		nTestX;
 	int		nTestY;
+	int		nCeiling;
+	int		nFloor;
+	t_corner	corners[4];
+	t_corner	temp_corner;
 
 	char	map[16][16] = {
-		{"#########......."},
-		{"#..............."},
-		{"#.......########"},
+		{"################"},
 		{"#..............#"},
-		{"#......##......#"},
-		{"#......##......#"},
+		{"#......#.#.....#"},
 		{"#..............#"},
-		{"###............#"},
-		{"##.............#"},
-		{"#......####..###"},
-		{"#......#.......#"},
-		{"#......#.......#"},
 		{"#..............#"},
-		{"#......#########"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#..............#"},
+		{"#......###.....#"},
 		{"#..............#"},
 		{"################"}
+	};
+
+	int row, col;
+	initscr();				/* Start curses mode 		*/
+	keypad(stdscr, TRUE);	/* I need that nifty F1 	*/
+	cbreak();				/* Line buffering disabled, Pass on every thing to me 		*/
+	noecho();
+
+	start_color();			/* Start the color functionality */
+	init_pair(1, COLOR_BLACK, COLOR_BLACK);
+	init_pair(2, COLOR_BLACK, COLOR_BLUE);
+	init_pair(3, COLOR_BLACK, COLOR_CYAN);
+	init_pair(4, COLOR_BLACK, COLOR_GREEN);
+	init_pair(5, COLOR_BLACK, COLOR_WHITE);
+	init_pair(6, COLOR_RED, COLOR_BLACK);
+	init_pair(7, COLOR_WHITE, COLOR_BLACK);
+
+	clear();
+
+	getmaxyx(stdscr,row,col);		/* get the number of rows and columns */
+	if (row < SCREEN_HEIGHT || col < SCREEN_WIDTH)
+	{
+		mvprintw(row / 2 - 1, col / 3,"This screen has %d rows and %d columns\n",row,col);
+		mvprintw(row / 2, col / 3,"Requires screen has %d rows and %d columns\n",SCREEN_HEIGHT,SCREEN_WIDTH);
+ 		refresh();
+ 		getch();
+ 		endwin();
+
+ 		return 0;
 	}
 
-	initscr();				/* Start curses mode 		*/
-	start_color();			/* Start the color functionality */
-	cbreak();				/* Line buffering disabled, Pass on every thing to me 		*/
-	keypad(stdscr, TRUE);	/* I need that nifty F1 	*/
-	noecho();
+
+	int	ch;
 
 	while (1)
 	{
@@ -49,6 +80,7 @@ int	main(void)
 			fRayAngle = (fPlayerA - FOV2) + ((float)x / (float)SCREEN_WIDTH) * FOV;
 
 			// Find distance to wall
+			fDistanceToWall = 0.0f; 	// resolution
 
 			bHitWall = false;			// Set when ray hits wall block
 			bBoundary = false;			// Set when ray hits boundary between two wall blocks
@@ -75,94 +107,144 @@ int	main(void)
 				else
 				{
 					// Ray is inbounds so test to see if the ray cell is a wall block
-					if (map[nTestX * MAPWIDTH + nTestY] == '#')
+					if (map[nTestX][nTestY] == '#')
 					{
 						// Ray has hit wall
 						bHitWall = true;
-/* ****************************************************************************** */
-
-						// To highlight tile boundaries, cast a ray from each corner
-						// of the tile, to the player. The more coincident this ray
-						// is to the rendering ray, the closer we are to a tile 
-						// boundary, which we'll shade to add detail to the walls
-						vector<pair<float, float>> p;
-
-						// Test each corner of hit tile, storing the distance from
-						// the player, and the calculated dot product of the two rays
-						for (int tx = 0; tx < 2; tx++)
-							for (int ty = 0; ty < 2; ty++)
+						for (tx = 0; tx < 2; tx++)
+						{
+							for (ty = 0; ty < 2; ty++)
 							{
 								// Angle of corner to eye
 								float vy = (float)nTestY + ty - fPlayerY;
 								float vx = (float)nTestX + tx - fPlayerX;
 								float d = sqrt(vx*vx + vy*vy); 
 								float dot = (fEyeX * vx / d) + (fEyeY * vy / d);
-								p.push_back(make_pair(d, dot));
+								corners[tx+ty].magnitude = d;
+								corners[tx+ty].dot_product = dot;
 							}
-
-						// Sort Pairs from closest to farthest
-						sort(p.begin(), p.end(), [](const pair<float, float> &left, const pair<float, float> &right) {return left.first < right.first; });
-						
-						// First two/three are closest (we will never see all four)
-						float fBound = 0.01;
-						if (acos(p.at(0).second) < fBound) bBoundary = true;
-						if (acos(p.at(1).second) < fBound) bBoundary = true;
-						if (acos(p.at(2).second) < fBound) bBoundary = true;
+						}
+						for (tx = 0; tx < 4; tx++)
+						{
+							for (ty = 0; ty < 4; ty++)
+							{
+								if (corners[tx].magnitude > corners[ty].magnitude)
+								{
+									temp_corner = corners[tx];
+									corners[tx] = corners[ty];
+									corners[ty] = temp_corner;
+								}
+							}
+						}
+						if ((acos(corners[0].dot_product) < BOUNDS) || \
+						(acos(corners[1].dot_product) < BOUNDS) || \
+						(acos(corners[2].dot_product) < BOUNDS))
+							bBoundary = TRUE;
 					}
 				}
 			}
-		
 			// Calculate distance to ceiling and floor
-			int nCeiling = (float)(SCREEN_HEIGHT/2.0) - SCREEN_HEIGHT / ((float)fDistanceToWall);
-			int nFloor = SCREEN_HEIGHT - nCeiling;
-
-			// Shader walls based on distance
+			nCeiling = (int)((float)((float)SCREEN_HEIGHT/2.0f) - (float)((float)SCREEN_HEIGHT / fDistanceToWall));
+			nFloor = (int)(SCREEN_HEIGHT - nCeiling);
+		
 			short nShade = ' ';
-			if (fDistanceToWall <= DEPTH / 4.0f)			nShade = 0x2588;	// Very close	
-			else if (fDistanceToWall < DEPTH / 3.0f)		nShade = 0x2593;
-			else if (fDistanceToWall < DEPTH / 2.0f)		nShade = 0x2592;
-			else if (fDistanceToWall < DEPTH)				nShade = 0x2591;
-			else											nShade = ' ';		// Too far away
-
-			if (bBoundary)		nShade = ' '; // Black it out
-			
-			for (int y = 0; y < SCREEN_HEIGHT; y++)
+			short nfShade = ' ';
+			int		col = 7;
+			attron(COLOR_PAIR(1));
+			if (fDistanceToWall <= DEPTH / 4.0f)	// Very close
 			{
-				// Each Row
-				if(y <= nCeiling)
-					screen[y*SCREEN_WIDTH + x] = ' ';
-				else if(y > nCeiling && y <= nFloor)
-					screen[y*SCREEN_WIDTH + x] = nShade;
-				else // Floor
-				{				
-					// Shade floor based on distance
-					float b = 1.0f - (((float)y -SCREEN_HEIGHT/2.0f) / ((float)SCREEN_HEIGHT / 2.0f));
-					if (b < 0.25)		nShade = '#';
-					else if (b < 0.5)	nShade = 'x';
-					else if (b < 0.75)	nShade = '.';
-					else if (b < 0.9)	nShade = '-';
-					else				nShade = ' ';
-					screen[y*SCREEN_WIDTH + x] = nShade;
+				col = 5;
+				nShade = '#';
+			}
+			else if (fDistanceToWall < DEPTH / 3.0f)
+			{
+				col = 4;
+				nShade = 'H';
+			}
+			else if (fDistanceToWall < DEPTH / 2.0f)
+			{
+				col = 3;
+				nShade = 'o';
+			}
+			else if (fDistanceToWall < DEPTH)
+			{
+				col = 2;
+				nShade = '.';
+			}
+			else
+			{
+				col = 1;
+				nShade = ' ';						// Too far away
+			}
+
+			if (bBoundary)
+			{
+				nShade = 'I';
+			}
+			for (y = 0; y < SCREEN_HEIGHT; y++)
+			{
+				if (y < nCeiling)
+				{
+					attron(COLOR_PAIR(7));
+					mvaddch(y, x, ' ');	// y * SCREEN_WIDTH + x = ' ';
+				}
+				else if (y > nCeiling && y <= nFloor)
+				{
+					if (bBoundary)
+						attron(A_REVERSE);
+					attron(COLOR_PAIR(col));
+					mvaddch(y, x, nShade);	// y * SCREEN_WIDTH + x = '#';
+					attroff(A_REVERSE);
+				}
+				else
+				{
+					attron(COLOR_PAIR(6));
+					float b = 1.0f - (((float)y - (float)SCREEN_HEIGHT / 2.0f) / ((float)SCREEN_HEIGHT / 2.0f));
+					if (b < 0.25)	// Very close
+						nfShade = 'X';
+					else if (b < 0.5)
+						nfShade = 'x';
+					else if (b < 0.75)
+						nfShade = '-';
+					else if (b < 0.9)
+						nfShade = '.';
+					else
+						nfShade = ' ';						// Too far away
+					mvaddch(y, x, nfShade);	// y * SCREEN_WIDTH + x = ' ';
 				}
 			}
+			attroff(A_REVERSE);
+			attron(COLOR_PAIR(7));
 		}
-
-		// Display Stats
-		swprintf_s(screen, 40, L"X=%3.2f, Y=%3.2f, A=%3.2f FPS=%3.2f ", fPlayerX, fPlayerY, fPlayerA, 1.0f/fElapsedTime);
-
-		// Display Map
-		for (int nx = 0; nx < MAPWIDTH; nx++)
-			for (int ny = 0; ny < MAPWIDTH; ny++)
-			{
-				screen[(ny+1)*SCREEN_WIDTH + nx] = map[ny * MAPWIDTH + nx];
-			}
-		screen[((int)fPlayerX+1) * SCREEN_WIDTH + (int)fPlayerY] = 'P';
-
-		// Display Frame
-		screen[SCREEN_WIDTH * SCREEN_HEIGHT - 1] = '\0';
-		WriteConsoleOutputCharacter(hConsole, screen, SCREEN_WIDTH * SCREEN_HEIGHT, { 0,0 }, &dwBytesWritten);
-
 		refresh(); /* Refresh ncurses */
+		ch = getch();
+		if (ch == KEY_END)
+			break ;
+		else if (ch == KEY_LEFT)
+			fPlayerA -= 0.1f;
+		else if (ch == KEY_RIGHT)
+			fPlayerA += 0.1f;
+		else if (ch == KEY_UP)
+		{
+			fPlayerX += sinf(fPlayerA) * 0.5f;
+			fPlayerY += cosf(fPlayerA) * 0.5f;
+			if (map[(int)fPlayerX][(int)fPlayerY] == '#')
+			{				
+				fPlayerX -= sinf(fPlayerA) * 0.5f;
+				fPlayerY -= cosf(fPlayerA) * 0.5f;
+			}
+		}
+		else if (ch == KEY_DOWN)
+		{
+			fPlayerX -= sinf(fPlayerA) * 0.5f;
+			fPlayerY -= cosf(fPlayerA) * 0.5f;
+			if (map[(int)fPlayerX][(int)fPlayerY] == '#')
+			{				
+				fPlayerX += sinf(fPlayerA) * 0.5f;
+				fPlayerY += cosf(fPlayerA) * 0.5f;
+			}
+		}
+		ch = 0;
 
 	}
 	endwin();		/* End curses mode		  */
