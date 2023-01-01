@@ -45,6 +45,7 @@ int	main(void)
 	keypad(stdscr, TRUE);	/* I need that nifty F1 	*/
 	cbreak();				/* Line buffering disabled, Pass on every thing to me 		*/
 	noecho();
+	curs_set(0);			/* Set cursor invisible*/
 
 	start_color();			/* Start the color functionality */
 	init_pair(1, COLOR_BLACK, COLOR_BLACK);
@@ -99,7 +100,7 @@ int	main(void)
 				
 
 				// Test if ray is out of bounds
-				if (nTestX < 0 || nTestX >= MAPWIDTH || nTestY < 0 || nTestY >= MAPHEIGHT)
+				if (nTestX < 0 || nTestX >= MAP_WIDTH || nTestY < 0 || nTestY >= MAP_HEIGHT)
 				{
 					bHitWall = true;			// Just set distance to maximum depth
 					fDistanceToWall = DEPTH;
@@ -137,8 +138,7 @@ int	main(void)
 							}
 						}
 						if ((acos(corners[0].dot_product) < BOUNDS) || \
-						(acos(corners[1].dot_product) < BOUNDS) || \
-						(acos(corners[2].dot_product) < BOUNDS))
+						(acos(corners[1].dot_product) < BOUNDS) || (acos(corners[2].dot_product) < BOUNDS))
 							bBoundary = TRUE;
 					}
 				}
@@ -177,6 +177,7 @@ int	main(void)
 				nShade = ' ';						// Too far away
 			}
 
+			//nShade = ' ';
 			if (bBoundary)
 			{
 				nShade = 'I';
@@ -216,15 +217,24 @@ int	main(void)
 			attroff(A_REVERSE);
 			attron(COLOR_PAIR(7));
 		}
+		for (tx = 0; tx < MAP_WIDTH; tx++)
+		{
+			for (ty = 0; ty < MAP_HEIGHT; ty++)
+			{
+				mvaddch(ty, tx, map[ty][tx]);
+			}
+		}
+		mvaddch((int)fPlayerX, (int)fPlayerY, 'P');
+		move((int)fPlayerX, (int)fPlayerY);
 		refresh(); /* Refresh ncurses */
 		ch = getch();
 		if (ch == KEY_END)
 			break ;
-		else if (ch == KEY_LEFT)
+		else if (ch == KEY_LEFT || ch == 'a')
 			fPlayerA -= 0.1f;
-		else if (ch == KEY_RIGHT)
+		else if (ch == KEY_RIGHT || ch == 'd')
 			fPlayerA += 0.1f;
-		else if (ch == KEY_UP)
+		else if (ch == KEY_UP || ch == 'w')
 		{
 			fPlayerX += sinf(fPlayerA) * 0.5f;
 			fPlayerY += cosf(fPlayerA) * 0.5f;
@@ -234,7 +244,7 @@ int	main(void)
 				fPlayerY -= cosf(fPlayerA) * 0.5f;
 			}
 		}
-		else if (ch == KEY_DOWN)
+		else if (ch == KEY_DOWN || ch == 's')
 		{
 			fPlayerX -= sinf(fPlayerA) * 0.5f;
 			fPlayerY -= cosf(fPlayerA) * 0.5f;
