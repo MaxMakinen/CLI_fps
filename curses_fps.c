@@ -3,7 +3,7 @@
 
 int	main(void)
 {
-	int		x, y, tx, ty;
+	int		x, y, tx, ty, index;
 	float	fPlayerX = 2.0f;			// Player Start Position
 	float	fPlayerY = 2.0f;
 	float	fPlayerA = 0.0f;			// Player Start Rotation
@@ -112,6 +112,7 @@ int	main(void)
 					{
 						// Ray has hit wall
 						bHitWall = true;
+						index = 0;
 						for (tx = 0; tx < 2; tx++)
 						{
 							for (ty = 0; ty < 2; ty++)
@@ -121,8 +122,9 @@ int	main(void)
 								float vx = (float)nTestX + tx - fPlayerX;
 								float d = sqrt(vx*vx + vy*vy); 
 								float dot = (fEyeX * vx / d) + (fEyeY * vy / d);
-								corners[tx+ty].magnitude = d;
-								corners[tx+ty].dot_product = dot;
+								corners[index].magnitude = d;
+								corners[index].dot_product = dot;
+								index++;
 							}
 						}
 						for (tx = 0; tx < 4; tx++)
