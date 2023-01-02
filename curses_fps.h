@@ -12,7 +12,7 @@
 # define FOV 3.14159f / 4.0f	// Field of view
 # define FOV2 FOV / 2.0f		// Half of field of view
 # define SPEED 5.09f			// walking speed
-# define BOUNDS 0.01f			// For determining if we see a corner
+# define BOUNDS 0.008f			// For determining if we see a corner
 
 # ifndef TRUE
 # 	define TRUE 1

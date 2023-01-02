@@ -50,11 +50,14 @@ int	main(void)
 	start_color();			/* Start the color functionality */
 	init_pair(1, COLOR_BLACK, COLOR_BLACK);
 	init_pair(2, COLOR_BLACK, COLOR_BLUE);
-	init_pair(3, COLOR_BLACK, COLOR_CYAN);
-	init_pair(4, COLOR_BLACK, COLOR_GREEN);
-	init_pair(5, COLOR_BLACK, COLOR_WHITE);
+	init_pair(3, COLOR_CYAN, COLOR_BLUE);
+	init_pair(4, COLOR_BLACK, COLOR_CYAN);
+	init_pair(5, COLOR_CYAN, COLOR_WHITE);
 	init_pair(6, COLOR_RED, COLOR_BLACK);
 	init_pair(7, COLOR_WHITE, COLOR_BLACK);
+	init_pair(8, COLOR_BLACK, COLOR_RED);
+
+	init_pair(9, COLOR_BLACK, COLOR_WHITE);
 
 	clear();
 
@@ -149,29 +152,32 @@ int	main(void)
 			nCeiling = (int)((float)((float)SCREEN_HEIGHT/2.0f) - (float)((float)SCREEN_HEIGHT / fDistanceToWall));
 			nFloor = (int)(SCREEN_HEIGHT - nCeiling);
 		
-			short nShade = ' ';
-			short nfShade = ' ';
+			unsigned char nShade = ' ';
+			unsigned char nfShade = ' ';
 			int		col = 7;
 			attron(COLOR_PAIR(1));
 			if (fDistanceToWall <= DEPTH / 4.0f)	// Very close
 			{
 				col = 5;
-				nShade = '#';
+				if (fDistanceToWall <= DEPTH / 7.0f)
+					nShade = ' ';
+				else
+					nShade = 'a';
 			}
 			else if (fDistanceToWall < DEPTH / 3.0f)
 			{
-				col = 4;
-				nShade = 'H';
+				col = 9;
+				nShade = 'a';
 			}
 			else if (fDistanceToWall < DEPTH / 2.0f)
 			{
-				col = 3;
-				nShade = 'o';
+				col = 4;
+				nShade = 'a';
 			}
 			else if (fDistanceToWall < DEPTH)
 			{
 				col = 2;
-				nShade = '.';
+				nShade = ' ';
 			}
 			else
 			{
@@ -182,7 +188,7 @@ int	main(void)
 			//nShade = ' ';
 			if (bBoundary)
 			{
-				nShade = 'I';
+				nShade = 'x';
 			}
 			for (y = 0; y < SCREEN_HEIGHT; y++)
 			{
@@ -196,24 +202,36 @@ int	main(void)
 					if (bBoundary)
 						attron(A_REVERSE);
 					attron(COLOR_PAIR(col));
-					mvaddch(y, x, nShade);	// y * SCREEN_WIDTH + x = '#';
+					mvaddch(y, x, NCURSES_ACS(nShade));	// y * SCREEN_WIDTH + x = '#';
 					attroff(A_REVERSE);
 				}
 				else
 				{
-					attron(COLOR_PAIR(6));
+					
 					float b = 1.0f - (((float)y - (float)SCREEN_HEIGHT / 2.0f) / ((float)SCREEN_HEIGHT / 2.0f));
 					if (b < 0.25)	// Very close
-						nfShade = 'X';
+					{
+						attron(COLOR_PAIR(8));
+						nfShade = ' ';
+					}
 					else if (b < 0.5)
-						nfShade = 'x';
+					{
+						attron(COLOR_PAIR(8));
+						nfShade = 'a';
+					}
 					else if (b < 0.75)
-						nfShade = '-';
+					{
+						attron(COLOR_PAIR(6));
+						nfShade = 'a';
+					}
 					else if (b < 0.9)
-						nfShade = '.';
+					{
+						attron(COLOR_PAIR(6));
+						nfShade = 'a';
+					}
 					else
 						nfShade = ' ';						// Too far away
-					mvaddch(y, x, nfShade);	// y * SCREEN_WIDTH + x = ' ';
+					mvaddch(y, x, NCURSES_ACS(nfShade));	// y * SCREEN_WIDTH + x = ' ';
 				}
 			}
 			attroff(A_REVERSE);
