@@ -41,11 +41,11 @@ int	main(void)
 	};
 
 	int row, col;
-	initscr();				/* Start curses mode 		*/
-	keypad(stdscr, TRUE);	/* I need that nifty F1 	*/
-	cbreak();				/* Line buffering disabled, Pass on every thing to me 		*/
+	initscr();				/* Start curses mode */
+	keypad(stdscr, TRUE);	
+	cbreak();				/* Line buffering disabled */
 	noecho();
-	curs_set(0);			/* Set cursor invisible*/
+	curs_set(0);			/* Set cursor invisible */
 
 	start_color();			/* Start the color functionality */
 	init_pair(1, COLOR_BLACK, COLOR_BLACK);
